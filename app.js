@@ -2,6 +2,15 @@ const StaticExpenseApp = (() => {
   const STORAGE_KEY = "companyReceiptExcel.static.v1";
   const money = new Intl.NumberFormat("ko-KR");
   const encoder = new TextEncoder();
+  const COMMON_RECEIPTS = [
+    { label: "야근식대 · 서브웨이", category: "식대", description: "야근식대", merchant: "서브웨이 여의도국회의사당" },
+    { label: "야근식대 · 아임샐러드", category: "식대", description: "야근식대", merchant: "아임샐러드 영등포" },
+    { label: "주말식대 · KFC", category: "식대", description: "주말식대", merchant: "KFC 여의도점" },
+    { label: "단체커피 · 더벤티", category: "식대", description: "단체커피", merchant: "더벤티 국회대로점" },
+    { label: "단체커피 · 우지커피", category: "식대", description: "단체커피", merchant: "우지커피 서여의도점" },
+    { label: "비품 · GS25", category: "비품", description: "비품 구매", merchant: "GS25" },
+    { label: "단체간식 · 오피스디포", category: "비품", description: "단체간식", merchant: "여의도점-(주)오피스디포코리아" }
+  ];
 
   let state = loadState();
 
@@ -37,6 +46,7 @@ const StaticExpenseApp = (() => {
     byId("importBackup").addEventListener("change", importBackup);
     byId("clearData").addEventListener("click", clearAllData);
 
+    renderQuickPicks();
     renderReceipts();
     renderBudget();
   }
@@ -103,7 +113,6 @@ const StaticExpenseApp = (() => {
       user: byId("user").value.trim(),
       receiptStatus: byId("receiptStatus").value,
       paymentMethod: byId("paymentMethod").value.trim(),
-      paymentDate: byId("paymentDate").value,
       invoiceStatus: byId("invoiceStatus").value,
       note: byId("note").value.trim(),
       createdAt: new Date().toISOString()
@@ -112,6 +121,7 @@ const StaticExpenseApp = (() => {
     state.receipts.sort((a, b) => a.usageDate.localeCompare(b.usageDate) || a.createdAt.localeCompare(b.createdAt));
     persist();
     resetReceiptForm();
+    renderQuickPicks();
     renderReceipts();
     setStatus("영수증을 저장했습니다.");
   }
@@ -178,16 +188,59 @@ const StaticExpenseApp = (() => {
     byId("user").value = entry.user;
     byId("receiptStatus").value = entry.receiptStatus;
     byId("paymentMethod").value = entry.paymentMethod;
-    byId("paymentDate").value = entry.paymentDate;
     byId("invoiceStatus").value = entry.invoiceStatus;
     byId("note").value = entry.note;
     byId("description").focus();
+  }
+
+  function renderQuickPicks() {
+    const list = byId("quickPickList");
+    list.innerHTML = "";
+    quickPickItems().forEach((item) => {
+      const button = document.createElement("button");
+      button.className = "chip";
+      button.type = "button";
+      button.textContent = item.label;
+      button.addEventListener("click", () => applyQuickPick(item));
+      list.appendChild(button);
+    });
+  }
+
+  function quickPickItems() {
+    const recent = [];
+    const seen = new Set();
+    state.receipts.slice().reverse().forEach((entry) => {
+      const key = `${entry.category}|${entry.description}|${entry.merchant}`;
+      if (!entry.description || !entry.merchant || seen.has(key)) return;
+      seen.add(key);
+      recent.push({
+        label: `${entry.description} · ${entry.merchant}`,
+        category: entry.category,
+        description: entry.description,
+        merchant: entry.merchant
+      });
+    });
+    return [...recent.slice(0, 4), ...COMMON_RECEIPTS]
+      .filter((item, index, array) => array.findIndex((candidate) =>
+        candidate.category === item.category &&
+        candidate.description === item.description &&
+        candidate.merchant === item.merchant
+      ) === index)
+      .slice(0, 10);
+  }
+
+  function applyQuickPick(item) {
+    byId("category").value = item.category;
+    byId("description").value = item.description;
+    byId("merchant").value = item.merchant;
+    byId("amount").focus();
   }
 
   function deleteReceipt(id) {
     if (!confirm("이 영수증을 삭제할까요?")) return;
     state.receipts = state.receipts.filter((entry) => entry.id !== id);
     persist();
+    renderQuickPicks();
     renderReceipts();
     setStatus("영수증을 삭제했습니다.");
   }
@@ -400,8 +453,7 @@ const StaticExpenseApp = (() => {
       "xl/_rels/workbook.xml.rels": workbookRelsXml(),
       "xl/workbook.xml": workbookXml(),
       "xl/styles.xml": stylesXml(),
-      "xl/worksheets/sheet1.xml": instructionSheetXml(),
-      "xl/worksheets/sheet2.xml": expensesSheetXml({ entries, total, name, project }),
+      "xl/worksheets/sheet1.xml": expensesSheetXml({ entries, total, name, project }),
       "[Content_Types].xml": contentTypesXml()
     };
     return zipStore(files);
@@ -411,95 +463,102 @@ const StaticExpenseApp = (() => {
     const totalRow = 7 + entries.length;
     const rows = [];
     rows.push(row(1, [
-      textCell("A1", 1, "성명"), textCell("B1", 2, name)
-    ]));
+      textCell("A1", 2, "성명"), textCell("B1", 38, name), ...topBlankCells(1)
+    ], "14"));
     rows.push(row(2, [
-      textCell("A2", 1, "프로젝트명"), textCell("B2", 2, project)
-    ]));
+      textCell("A2", 2, "프로젝트명"), textCell("B2", 38, project), ...topBlankCells(2)
+    ], "14"));
     rows.push(row(3, [
-      textCell("A3", 1, "총결제금액"), formulaCell("B3", 5, `E${totalRow}`, total)
-    ]));
+      textCell("A3", 2, "총결제금액"), formulaCell("B3", 43, `E${totalRow}`, total), ...topBlankCells(3)
+    ], "14"));
     rows.push(row(4, [
-      textCell("A4", 1, "실제 결제일자"), textCell("B4", 2, "")
-    ]));
-    rows.push(row(5, []));
+      blankCell("A4", 3), blankCell("B4", 44), ...topBlankCells(4)
+    ], "14"));
+    rows.push(row(5, [
+      blankCell("A5", 45), blankCell("B5", 46), blankCell("C5", 47), blankCell("D5", 47),
+      blankCell("E5", 48), blankCell("F5", 48), blankCell("G5", 49), blankCell("H5", 48),
+      blankCell("I5", 47), blankCell("J5", 47)
+    ], "14"));
     rows.push(row(6, [
-      textCell("A6", 3, "사용일자"),
-      textCell("B6", 3, "구분"),
-      textCell("C6", 3, "사용내역"),
-      textCell("D6", 3, "사용처"),
-      textCell("E6", 3, "사용금액"),
-      textCell("F6", 3, "사용자"),
-      textCell("G6", 3, "영수증"),
-      textCell("H6", 3, ""),
-      textCell("I6", 3, "결제일자"),
-      textCell("J6", 3, "세금계산서"),
-      textCell("K6", 3, "비고")
-    ]));
+      textCell("A6", 2, "사용일자"),
+      textCell("B6", 2, "구분"),
+      textCell("C6", 2, "사용내역"),
+      textCell("D6", 2, "사용처"),
+      textCell("E6", 2, "사용금액"),
+      textCell("F6", 2, "사용자"),
+      textCell("G6", 2, "영수증"),
+      textCell("H6", 2, "결제수단"),
+      textCell("I6", 2, "세금계산서"),
+      textCell("J6", 2, "비고")
+    ], "12.75"));
     entries.forEach((entry, index) => {
       const rowNumber = 7 + index;
       rows.push(row(rowNumber, [
-        numberCell(`A${rowNumber}`, 4, excelSerial(entry.usageDate)),
-        textCell(`B${rowNumber}`, 6, entry.category),
-        textCell(`C${rowNumber}`, 6, entry.description),
-        textCell(`D${rowNumber}`, 6, entry.merchant),
-        numberCell(`E${rowNumber}`, 5, Number(entry.amount || 0)),
-        textCell(`F${rowNumber}`, 6, entry.user),
-        textCell(`G${rowNumber}`, 6, entry.receiptStatus),
-        textCell(`H${rowNumber}`, 6, entry.paymentMethod),
-        entry.paymentDate ? numberCell(`I${rowNumber}`, 4, excelSerial(entry.paymentDate)) : textCell(`I${rowNumber}`, 6, ""),
-        textCell(`J${rowNumber}`, 6, entry.invoiceStatus),
-        textCell(`K${rowNumber}`, 6, entry.note)
-      ]));
+        numberCell(`A${rowNumber}`, 51, excelSerial(entry.usageDate)),
+        textCell(`B${rowNumber}`, 8, entry.category),
+        textCell(`C${rowNumber}`, 52, entry.description),
+        textCell(`D${rowNumber}`, 52, entry.merchant),
+        numberCell(`E${rowNumber}`, 53, Number(entry.amount || 0)),
+        textCell(`F${rowNumber}`, 8, entry.user),
+        textCell(`G${rowNumber}`, 7, entry.receiptStatus),
+        textOrBlankCell(`H${rowNumber}`, 8, entry.paymentMethod),
+        textCell(`I${rowNumber}`, 8, entry.invoiceStatus),
+        textOrBlankCell(`J${rowNumber}`, 54, entry.note)
+      ], "14"));
     });
     rows.push(row(totalRow, [
-      textCell(`A${totalRow}`, 7, "합계"),
-      textCell(`B${totalRow}`, 7, ""),
-      textCell(`C${totalRow}`, 7, ""),
-      textCell(`D${totalRow}`, 7, ""),
-      entries.length ? formulaCell(`E${totalRow}`, 8, `SUM(E7:E${totalRow - 1})`, total) : numberCell(`E${totalRow}`, 8, 0)
-    ]));
+      textCell(`A${totalRow}`, 56, "합계"),
+      blankCell(`B${totalRow}`, 57),
+      blankCell(`C${totalRow}`, 57),
+      blankCell(`D${totalRow}`, 57),
+      entries.length ? formulaCell(`E${totalRow}`, 58, `SUM(E7:E${totalRow - 1})`, total) : numberCell(`E${totalRow}`, 58, 0),
+      blankCell(`F${totalRow}`, 17),
+      blankCell(`G${totalRow}`, 59),
+      blankCell(`H${totalRow}`, 19),
+      blankCell(`I${totalRow}`, 19),
+      blankCell(`J${totalRow}`, 19)
+    ], "13"));
 
     return xmlHeader(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-      <dimension ref="A1:K${totalRow}"/>
-      <sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews>
+      <sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>
+      <dimension ref="A1:J${totalRow}"/>
+      <sheetViews><sheetView workbookViewId="0" showGridLines="0" defaultGridColor="1"/></sheetViews>
+      <sheetFormatPr defaultColWidth="12.5" defaultRowHeight="13" customHeight="1"/>
       <cols>
-        <col min="1" max="1" width="11" customWidth="1"/>
-        <col min="2" max="2" width="14" customWidth="1"/>
+        <col min="1" max="1" width="10.8516" style="37" customWidth="1"/>
+        <col min="2" max="2" width="13.6719" style="37" customWidth="1"/>
         <col min="3" max="3" width="51" customWidth="1"/>
-        <col min="4" max="4" width="27" customWidth="1"/>
-        <col min="5" max="5" width="12" customWidth="1"/>
-        <col min="6" max="7" width="10" customWidth="1"/>
-        <col min="8" max="8" width="11" customWidth="1"/>
-        <col min="9" max="9" width="11" customWidth="1"/>
-        <col min="10" max="10" width="13" customWidth="1"/>
-        <col min="11" max="11" width="16" customWidth="1"/>
+        <col min="4" max="4" width="26.9531" style="37" customWidth="1"/>
+        <col min="5" max="5" width="10.5" style="37" customWidth="1"/>
+        <col min="6" max="7" width="9" style="37" customWidth="1"/>
+        <col min="8" max="8" width="9.85156" style="37" customWidth="1"/>
+        <col min="9" max="9" width="11.8516" style="37" customWidth="1"/>
+        <col min="10" max="10" width="12.6719" style="37" customWidth="1"/>
       </cols>
       <sheetData>${rows.join("")}</sheetData>
       <mergeCells count="1"><mergeCell ref="A${totalRow}:C${totalRow}"/></mergeCells>
-      <pageMargins left="0.35" right="0.31" top="0.75" bottom="0.79" header="0.51" footer="0.51"/>
-      <pageSetup orientation="landscape" fitToWidth="1" fitToHeight="1"/>
+      <pageMargins left="0.354331" right="0.314961" top="0.748031" bottom="0.787402" header="0.511811" footer="0.511811"/>
+      <pageSetup firstPageNumber="1" fitToHeight="1" fitToWidth="1" scale="100" useFirstPageNumber="0" orientation="landscape" pageOrder="downThenOver"/>
+      <headerFooter><oddHeader>&amp;L&amp;&quot;돋움,Regular&quot;&amp;11&amp;K000000Expenses List_법인</oddHeader><oddFooter>&amp;L&amp;&quot;돋움,Regular&quot;&amp;11&amp;K000000&amp;P 쪽</oddFooter></headerFooter>
     </worksheet>`);
   }
 
-  function instructionSheetXml() {
-    return xmlHeader(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-      <dimension ref="A1:D9"/>
-      <sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews>
-      <cols><col min="1" max="1" width="18" customWidth="1"/><col min="2" max="4" width="32" customWidth="1"/></cols>
-      <sheetData>
-        ${row(1, [textCell("A1", 3, "작성방법")])}
-        ${row(3, [textCell("A3", 1, "사용일자"), textCell("B3", 2, "영수증 발행일자")])}
-        ${row(4, [textCell("A4", 1, "사용내역"), textCell("B4", 2, "항목, 사용자 등 상세히 기재")])}
-        ${row(5, [textCell("A5", 1, "영수증"), textCell("B5", 2, "유/무")])}
-        ${row(6, [textCell("A6", 1, "세금계산서"), textCell("B6", 2, "발행/미발행")])}
-        ${row(8, [textCell("A8", 2, "이 파일은 서버 없는 정적 앱에서 생성되었습니다.")])}
-      </sheetData>
-    </worksheet>`);
+  function topBlankCells(rowNumber) {
+    return [
+      blankCell(`C${rowNumber}`, 39),
+      blankCell(`D${rowNumber}`, 40),
+      blankCell(`E${rowNumber}`, 41),
+      blankCell(`F${rowNumber}`, 41),
+      blankCell(`G${rowNumber}`, 42),
+      blankCell(`H${rowNumber}`, 41),
+      blankCell(`I${rowNumber}`, 40),
+      blankCell(`J${rowNumber}`, 40)
+    ];
   }
 
-  function row(index, cells) {
-    return `<row r="${index}">${cells.join("")}</row>`;
+  function row(index, cells, height = "") {
+    const attrs = height ? ` ht="${height}" customHeight="1"` : "";
+    return `<row r="${index}"${attrs}>${cells.join("")}</row>`;
   }
 
   function textCell(ref, style, value) {
@@ -514,6 +573,14 @@ const StaticExpenseApp = (() => {
     return `<c r="${ref}" s="${style}"><f>${formula}</f><v>${Number(value || 0)}</v></c>`;
   }
 
+  function blankCell(ref, style) {
+    return `<c r="${ref}" s="${style}"/>`;
+  }
+
+  function textOrBlankCell(ref, style, value) {
+    return value ? textCell(ref, style, value) : blankCell(ref, style);
+  }
+
   function excelSerial(dateText) {
     const [year, month, day] = dateText.split("-").map(Number);
     const date = Date.UTC(year, month - 1, day);
@@ -522,34 +589,53 @@ const StaticExpenseApp = (() => {
   }
 
   function stylesXml() {
+    const defaultXf = `<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>`;
+    const bordered = `<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"><alignment vertical="center"/></xf>`;
+    const header = `<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>`;
+    const headerMuted = `<xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>`;
+    const topValue = `<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"><alignment horizontal="left" vertical="center"/></xf>`;
+    const moneyValue = `<xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="right" vertical="center"/></xf>`;
+    const dateValue = `<xf numFmtId="14" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>`;
+    const wrapped = `<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>`;
+    const centered = `<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>`;
+    const totalLabel = `<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>`;
+    const totalMoney = `<xf numFmtId="164" fontId="1" fillId="2" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="right" vertical="center"/></xf>`;
+    const xfs = Array.from({ length: 60 }, () => bordered);
+    xfs[0] = defaultXf;
+    [2, 3, 50].forEach((index) => { xfs[index] = header; });
+    [38, 44].forEach((index) => { xfs[index] = topValue; });
+    xfs[43] = moneyValue;
+    [39, 40, 41, 42, 45, 46, 47, 48, 49].forEach((index) => { xfs[index] = bordered; });
+    xfs[51] = dateValue;
+    xfs[52] = wrapped;
+    xfs[53] = moneyValue;
+    xfs[7] = centered;
+    xfs[8] = centered;
+    xfs[54] = wrapped;
+    xfs[56] = totalLabel;
+    xfs[57] = headerMuted;
+    xfs[58] = totalMoney;
+    xfs[17] = headerMuted;
+    xfs[19] = headerMuted;
+    xfs[59] = headerMuted;
     return xmlHeader(`<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
       <numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0"/></numFmts>
-      <fonts count="3">
-        <font><sz val="10"/><name val="Arial"/></font>
-        <font><b/><sz val="10"/><name val="Arial"/></font>
-        <font><b/><sz val="11"/><name val="Arial"/></font>
+      <fonts count="2">
+        <font><sz val="9"/><name val="돋움"/></font>
+        <font><b/><sz val="9"/><name val="돋움"/></font>
       </fonts>
-      <fills count="3">
+      <fills count="4">
         <fill><patternFill patternType="none"/></fill>
         <fill><patternFill patternType="gray125"/></fill>
-        <fill><patternFill patternType="solid"><fgColor rgb="FFE8EEF2"/><bgColor indexed="64"/></patternFill></fill>
+        <fill><patternFill patternType="solid"><fgColor rgb="FFD9E2F3"/><bgColor indexed="64"/></patternFill></fill>
+        <fill><patternFill patternType="solid"><fgColor rgb="FFEDEDED"/><bgColor indexed="64"/></patternFill></fill>
       </fills>
       <borders count="2">
         <border><left/><right/><top/><bottom/><diagonal/></border>
-        <border><left style="thin"/><right style="thin"/><top style="thin"/><bottom style="thin"/><diagonal/></border>
+        <border><left style="thin"><color indexed="64"/></left><right style="thin"><color indexed="64"/></right><top style="thin"><color indexed="64"/></top><bottom style="thin"><color indexed="64"/></bottom><diagonal/></border>
       </borders>
       <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-      <cellXfs count="9">
-        <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-        <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
-        <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"><alignment vertical="center"/></xf>
-        <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
-        <xf numFmtId="14" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
-        <xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="right" vertical="center"/></xf>
-        <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>
-        <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
-        <xf numFmtId="164" fontId="1" fillId="2" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="right" vertical="center"/></xf>
-      </cellXfs>
+      <cellXfs count="${xfs.length}">${xfs.join("")}</cellXfs>
       <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
     </styleSheet>`);
   }
@@ -557,8 +643,7 @@ const StaticExpenseApp = (() => {
   function workbookXml() {
     return xmlHeader(`<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
       <sheets>
-        <sheet name="작성방법" sheetId="1" r:id="rId1"/>
-        <sheet name="Expenses List_법인" sheetId="2" r:id="rId2"/>
+        <sheet name="Expenses List_법인" sheetId="1" r:id="rId1"/>
       </sheets>
     </workbook>`);
   }
@@ -566,8 +651,7 @@ const StaticExpenseApp = (() => {
   function workbookRelsXml() {
     return xmlHeader(`<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
       <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-      <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>
-      <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+      <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
     </Relationships>`);
   }
 
@@ -588,7 +672,6 @@ const StaticExpenseApp = (() => {
       <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
       <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
       <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-      <Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
     </Types>`);
   }
 
@@ -717,4 +800,3 @@ if (typeof window !== "undefined") {
 if (typeof module !== "undefined") {
   module.exports = StaticExpenseApp;
 }
-

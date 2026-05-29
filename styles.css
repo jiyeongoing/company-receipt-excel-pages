@@ -39,6 +39,16 @@ button,
   cursor: pointer;
 }
 
+button.chip {
+  min-height: 34px;
+  border-color: #cdd9d5;
+  background: #f8fbfa;
+  color: var(--brand-strong);
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 button.primary {
   border-color: var(--brand);
   background: var(--brand);
@@ -179,6 +189,23 @@ input::placeholder {
 form {
   display: grid;
   gap: 12px;
+}
+
+.quick-picks {
+  display: grid;
+  gap: 8px;
+}
+
+.quick-picks span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .split {

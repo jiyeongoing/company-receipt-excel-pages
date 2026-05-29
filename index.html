@@ -66,6 +66,10 @@
               사용처
               <input id="merchant" type="text" placeholder="예: 서브웨이 여의도국회의사당" required>
             </label>
+            <div class="quick-picks">
+              <span>빠른 입력</span>
+              <div id="quickPickList" class="chip-list"></div>
+            </div>
             <label>
               사용금액
               <input id="amount" type="number" min="0" step="1" inputmode="numeric" placeholder="예: 37000" required>
@@ -90,16 +94,10 @@
                 </select>
               </label>
             </div>
-            <div class="split">
-              <label>
-                결제수단
-                <input id="paymentMethod" type="text" placeholder="예: 국민카드">
-              </label>
-              <label>
-                결제일자
-                <input id="paymentDate" type="date" placeholder="예: 2026-05-29">
-              </label>
-            </div>
+            <label>
+              결제수단
+              <input id="paymentMethod" type="text" placeholder="예: 국민카드">
+            </label>
             <label>
               비고
               <input id="note" type="text" placeholder="예: 영수증 원본 제출 완료">
