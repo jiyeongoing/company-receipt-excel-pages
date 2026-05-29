@@ -24,15 +24,15 @@
         <section class="toolbar">
           <label>
             월
-            <input id="receiptMonth" type="month">
+            <input id="receiptMonth" type="month" placeholder="예: 2026-05">
           </label>
           <label>
             성명
-            <input id="exportName" type="text" autocomplete="name">
+            <input id="exportName" type="text" autocomplete="name" placeholder="예: 이병수">
           </label>
           <label>
             프로젝트명
-            <input id="exportProject" type="text">
+            <input id="exportProject" type="text" placeholder="예: 블루월넛">
           </label>
           <button id="exportExcel" class="primary" type="button">엑셀 저장</button>
         </section>
@@ -46,7 +46,7 @@
             </div>
             <label>
               사용일자
-              <input id="usageDate" type="date" required>
+              <input id="usageDate" type="date" placeholder="예: 2026-05-29" required>
             </label>
             <label>
               구분
@@ -60,19 +60,19 @@
             </label>
             <label>
               사용내역
-              <input id="description" type="text" required>
+              <input id="description" type="text" placeholder="예: 야근식대(김나경 대리 외 2인)" required>
             </label>
             <label>
               사용처
-              <input id="merchant" type="text" required>
+              <input id="merchant" type="text" placeholder="예: 서브웨이 여의도국회의사당" required>
             </label>
             <label>
               사용금액
-              <input id="amount" type="number" min="0" step="1" inputmode="numeric" required>
+              <input id="amount" type="number" min="0" step="1" inputmode="numeric" placeholder="예: 37000" required>
             </label>
             <label>
               사용자
-              <input id="user" type="text" required>
+              <input id="user" type="text" placeholder="예: 이병수" required>
             </label>
             <div class="split">
               <label>
@@ -93,16 +93,16 @@
             <div class="split">
               <label>
                 결제수단
-                <input id="paymentMethod" type="text">
+                <input id="paymentMethod" type="text" placeholder="예: 국민카드">
               </label>
               <label>
                 결제일자
-                <input id="paymentDate" type="date">
+                <input id="paymentDate" type="date" placeholder="예: 2026-05-29">
               </label>
             </div>
             <label>
               비고
-              <input id="note" type="text">
+              <input id="note" type="text" placeholder="예: 영수증 원본 제출 완료">
             </label>
             <button class="primary full" type="submit">저장</button>
           </form>
@@ -121,7 +121,7 @@
         <section class="toolbar compact">
           <label>
             연도
-            <input id="budgetYear" type="number" min="2000" max="2100">
+            <input id="budgetYear" type="number" min="2000" max="2100" placeholder="예: 2026">
           </label>
           <label>
             분기
@@ -161,15 +161,15 @@
             </div>
             <label>
               <span id="month1Label">1월</span>
-              <input id="month1Amount" type="number" min="0" step="1" inputmode="numeric">
+              <input id="month1Amount" type="number" min="0" step="1" inputmode="numeric" placeholder="예: 300000">
             </label>
             <label>
               <span id="month2Label">2월</span>
-              <input id="month2Amount" type="number" min="0" step="1" inputmode="numeric">
+              <input id="month2Amount" type="number" min="0" step="1" inputmode="numeric" placeholder="예: 300000">
             </label>
             <label>
               <span id="month3Label">3월</span>
-              <input id="month3Amount" type="number" min="0" step="1" inputmode="numeric">
+              <input id="month3Amount" type="number" min="0" step="1" inputmode="numeric" placeholder="예: 300000">
             </label>
           </section>
 
@@ -185,21 +185,21 @@
             </label>
             <label>
               항목
-              <input id="budgetItemName" type="text" required>
+              <input id="budgetItemName" type="text" placeholder="예: 식대 예산" required>
             </label>
             <div class="split">
               <label>
                 예산
-                <input id="plannedAmount" type="number" min="0" step="1" inputmode="numeric" required>
+                <input id="plannedAmount" type="number" min="0" step="1" inputmode="numeric" placeholder="예: 200000" required>
               </label>
               <label>
                 실사용
-                <input id="actualAmount" type="number" min="0" step="1" inputmode="numeric" required>
+                <input id="actualAmount" type="number" min="0" step="1" inputmode="numeric" placeholder="예: 123450" required>
               </label>
             </div>
             <label>
               메모
-              <input id="budgetNote" type="text">
+              <input id="budgetNote" type="text" placeholder="예: 5월 야근 식대">
             </label>
             <button class="primary full" type="submit">저장</button>
           </form>
@@ -232,4 +232,3 @@
     <script src="./app.js"></script>
   </body>
 </html>
-

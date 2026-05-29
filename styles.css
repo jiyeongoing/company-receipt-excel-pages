@@ -172,6 +172,10 @@ select {
   padding: 0 12px;
 }
 
+input::placeholder {
+  color: #9aa5b4;
+}
+
 form {
   display: grid;
   gap: 12px;
@@ -315,4 +319,3 @@ form {
     justify-content: flex-end;
   }
 }
-
