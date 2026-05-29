@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>회사 정산</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>회사 정산</h1>
+          <p id="statusText">서버 없이 이 브라우저에 저장합니다.</p>
+        </div>
+        <div class="tabs">
+          <button class="tab active" type="button" data-view="receipts">영수증</button>
+          <button class="tab" type="button" data-view="budget">분기 예산</button>
+          <button class="tab" type="button" data-view="backup">백업</button>
+        </div>
+      </header>
+
+      <section id="receiptsView" class="view active">
+        <section class="toolbar">
+          <label>
+            월
+            <input id="receiptMonth" type="month">
+          </label>
+          <label>
+            성명
+            <input id="exportName" type="text" autocomplete="name">
+          </label>
+          <label>
+            프로젝트명
+            <input id="exportProject" type="text">
+          </label>
+          <button id="exportExcel" class="primary" type="button">엑셀 저장</button>
+        </section>
+
+        <section class="content-grid">
+          <form id="receiptForm" class="panel">
+            <input id="receiptId" type="hidden">
+            <div class="panel-title">
+              <h2>영수증 입력</h2>
+              <button id="resetReceipt" type="button">새 항목</button>
+            </div>
+            <label>
+              사용일자
+              <input id="usageDate" type="date" required>
+            </label>
+            <label>
+              구분
+              <select id="category">
+                <option>식대</option>
+                <option>비품</option>
+                <option>교통비</option>
+                <option>사무용품</option>
+                <option>기타</option>
+              </select>
+            </label>
+            <label>
+              사용내역
+              <input id="description" type="text" required>
+            </label>
+            <label>
+              사용처
+              <input id="merchant" type="text" required>
+            </label>
+            <label>
+              사용금액
+              <input id="amount" type="number" min="0" step="1" inputmode="numeric" required>
+            </label>
+            <label>
+              사용자
+              <input id="user" type="text" required>
+            </label>
+            <div class="split">
+              <label>
+                영수증
+                <select id="receiptStatus">
+                  <option>유</option>
+                  <option>무</option>
+                </select>
+              </label>
+              <label>
+                세금계산서
+                <select id="invoiceStatus">
+                  <option>미발행</option>
+                  <option>발행</option>
+                </select>
+              </label>
+            </div>
+            <div class="split">
+              <label>
+                결제수단
+                <input id="paymentMethod" type="text">
+              </label>
+              <label>
+                결제일자
+                <input id="paymentDate" type="date">
+              </label>
+            </div>
+            <label>
+              비고
+              <input id="note" type="text">
+            </label>
+            <button class="primary full" type="submit">저장</button>
+          </form>
+
+          <section class="panel list-panel">
+            <div class="panel-title">
+              <h2>월별 내역</h2>
+              <strong id="receiptTotal">0원</strong>
+            </div>
+            <div id="receiptList" class="list"></div>
+          </section>
+        </section>
+      </section>
+
+      <section id="budgetView" class="view">
+        <section class="toolbar compact">
+          <label>
+            연도
+            <input id="budgetYear" type="number" min="2000" max="2100">
+          </label>
+          <label>
+            분기
+            <select id="budgetQuarter">
+              <option value="1">1분기</option>
+              <option value="2">2분기</option>
+              <option value="3">3분기</option>
+              <option value="4">4분기</option>
+            </select>
+          </label>
+        </section>
+
+        <section class="summary-row">
+          <div class="metric">
+            <span>분기 지급금</span>
+            <strong id="totalAllowance">0원</strong>
+          </div>
+          <div class="metric">
+            <span>예산 배정</span>
+            <strong id="totalPlanned">0원</strong>
+          </div>
+          <div class="metric">
+            <span>실사용</span>
+            <strong id="totalActual">0원</strong>
+          </div>
+          <div class="metric accent">
+            <span>잔여금</span>
+            <strong id="remainingBudget">0원</strong>
+          </div>
+        </section>
+
+        <section class="content-grid">
+          <section class="panel">
+            <div class="panel-title">
+              <h2>월별 지급금</h2>
+              <button id="saveMonths" type="button">저장</button>
+            </div>
+            <label>
+              <span id="month1Label">1월</span>
+              <input id="month1Amount" type="number" min="0" step="1" inputmode="numeric">
+            </label>
+            <label>
+              <span id="month2Label">2월</span>
+              <input id="month2Amount" type="number" min="0" step="1" inputmode="numeric">
+            </label>
+            <label>
+              <span id="month3Label">3월</span>
+              <input id="month3Amount" type="number" min="0" step="1" inputmode="numeric">
+            </label>
+          </section>
+
+          <form id="budgetItemForm" class="panel">
+            <input id="budgetItemId" type="hidden">
+            <div class="panel-title">
+              <h2>예산 항목</h2>
+              <button id="resetBudgetItem" type="button">새 항목</button>
+            </div>
+            <label>
+              월
+              <select id="budgetItemMonth"></select>
+            </label>
+            <label>
+              항목
+              <input id="budgetItemName" type="text" required>
+            </label>
+            <div class="split">
+              <label>
+                예산
+                <input id="plannedAmount" type="number" min="0" step="1" inputmode="numeric" required>
+              </label>
+              <label>
+                실사용
+                <input id="actualAmount" type="number" min="0" step="1" inputmode="numeric" required>
+              </label>
+            </div>
+            <label>
+              메모
+              <input id="budgetNote" type="text">
+            </label>
+            <button class="primary full" type="submit">저장</button>
+          </form>
+        </section>
+
+        <section class="panel list-panel wide">
+          <div class="panel-title">
+            <h2>분기 예산 내역</h2>
+            <strong id="unallocatedBudget">0원 미배정</strong>
+          </div>
+          <div id="budgetList" class="list"></div>
+        </section>
+      </section>
+
+      <section id="backupView" class="view">
+        <section class="panel backup-panel">
+          <h2>데이터 백업</h2>
+          <p>서버 없는 버전의 데이터는 이 브라우저에만 저장됩니다. iPhone 교체, Safari 데이터 삭제, 다른 기기 사용 전에 백업 파일을 내려받아 보관하세요.</p>
+          <div class="backup-actions">
+            <button id="downloadBackup" class="primary" type="button">백업 다운로드</button>
+            <label class="file-button">
+              백업 가져오기
+              <input id="importBackup" type="file" accept="application/json,.json">
+            </label>
+            <button id="clearData" class="danger" type="button">전체 삭제</button>
+          </div>
+        </section>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>
+
